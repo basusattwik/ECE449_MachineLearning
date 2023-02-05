@@ -6,19 +6,19 @@ close all; clearvars; clc
 %% Setup
 
 D   = 2;    % dimensions of data
-K   = 2;    % number of clusters
+K   = 3;    % number of clusters
 N   = 1000;  % number of points in each cluster
-maxItr = 5; % max number of iterations to run
+maxItr = 10; % max number of iterations to run
 
 % Initialize data blobs
 std    = 0.5;  % standard deviation
-mean   = 2 * [[1; -1], [-1; 1]]; % mean of blobs
+mean   = [[2;2], [-2;2], [-2;-2]]; % mean of blobs
 [X, C] = initBlobs(N, K, D, std, mean);
 Cinit  = C; 
 
 % Visualize
-scatterColors  = {[0.3010 0.7450 0.9330], [0.9290 0.6940 0.1250]};
-centroidColors = {[0 0.4470 0.7410], [0.6350 0.0780 0.1840]};
+scatterColors  = {[0.3010 0.7450 0.9330], [0.9290 0.6940 0.1250], [0.4940 0.1840 0.5560]};
+centroidColors = {[0 0.4470 0.7410], [0.6350 0.0780 0.1840], [0 0 0]};
 
 %% K Means
 
@@ -83,7 +83,7 @@ while i <= maxItr
         legend('show');
         xlabel('x1'); ylabel('x2');
     end
-    pause(0.5)
+    pause(1)
 
     % reset assignment
     r(:) = 0;
