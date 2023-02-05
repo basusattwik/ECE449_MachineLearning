@@ -5,14 +5,7 @@ import hw1_utils
 # Distance measure
 def get_distance(x, y):
     return torch.norm(x-y)**2
-
-# Assign every point in the dataset to one of the clusters
-def get_assigmnents():
-    pass
-
-# Update centroids to new positions
-def update_centroids():
-    pass
+    
 
 # Kmeans implementation
 def k_means(X=None, init_c=None, n_iters=50):
@@ -36,20 +29,11 @@ def k_means(X=None, init_c=None, n_iters=50):
     r = torch.zeros([K, T]) # keeps track of assignments
     d = torch.zeros([K, T]) # keeps track of distances of points from centroids
 
-    maxItr = 50
+    maxItr = 10
     i = 0
     c = init_c
 
-    bPlot = False
-
-    print('--- size of X: ', X.size())
-    print('--- X = ', X)
-    print('--- size of c init: ', c.size())
-    print('--- c init = ', c)
-    print('--- size of r init: ', r.size())
-    print('--- rinit = ', r)
-    print('--- size of c: ', c.size())
-    print('--- Step ', i, 'c = ', c)
+    bPlot = True
 
     while i < maxItr:
 
@@ -59,8 +43,6 @@ def k_means(X=None, init_c=None, n_iters=50):
                 # Calculate distance between each point and the centroids
                 d[k, n] = get_distance(X[:,n], c[:,k])
 
-        print('--- size of d:', d.size())
-        print('--- dist, d = ', d)
         
         # Assign points to clusters
         for n in range(T):
@@ -69,15 +51,11 @@ def k_means(X=None, init_c=None, n_iters=50):
                 if k == ind:
                     r[k,n] = 1
 
-        print('--- size of r: ', r.size())
-        print('--- r = ', r)
 
         # update centroids       
         for k in range(K):
             c[:,k] = torch.sum(r[k,:] *  X, 1) / torch.sum(r[k,:])
 
-        print('--- size of c: ', c.size())
-        print('--- Step ', i+1, 'c = ', c)
         
         # visualize clusters
         if bPlot:
@@ -97,10 +75,10 @@ def k_means(X=None, init_c=None, n_iters=50):
         # Update loop index
         i += 1
 
-    return c, r
+    return c
 
 # main entrypoint
-cent, r = k_means()
+centroids = k_means()
 
-print('--- Final Centroids:', cent)
+print('--- Final Centroids:', centroids)
 print('Done!')
