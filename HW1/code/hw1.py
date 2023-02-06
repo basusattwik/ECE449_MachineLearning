@@ -4,7 +4,7 @@ import hw1_utils
 
 # Distance measure
 def get_distance(x, y):
-    return torch.norm(x-y)**2
+    return torch.norm(x-y)
 
 
 # Kmeans implementation
@@ -22,7 +22,6 @@ def k_means(X=None, init_c=None, n_iters=50):
     if X is None:
         X, init_c = hw1_utils.load_data()
 
-    maxItr = 10
     c = init_c
     K = 2
 
@@ -33,7 +32,7 @@ def k_means(X=None, init_c=None, n_iters=50):
 
     bPlot = False
     i = 0       
-    while i < maxItr:
+    while i < n_iters:
 
         # get distance of points from cluster centers
         for n in range(T):
@@ -71,5 +70,6 @@ def k_means(X=None, init_c=None, n_iters=50):
 
 # main entrypoint
 centroids = k_means()
-print('--- Final Centroids:', centroids)
+print('--- Final Centroids = ')
+print(centroids)
 print('Done!')
