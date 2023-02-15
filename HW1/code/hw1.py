@@ -4,7 +4,21 @@ import hw1_utils
 
 # Distance measure
 def get_distance(x, y):
-    return torch.norm(x-y)
+    return torch.norm(x-y)**2
+
+# Output cost function value
+def final_cost(X, c, r):
+    
+    K = 2
+    D = X.size(dim=0)
+    T = X.size(dim=1) # total number of data points
+
+    cost = 0
+    for n in range(T):
+        for k in range(K):
+            cost += r[k,n] * get_distance(X[:,n], c[:,k])
+
+    return 0.5 * cost
 
 
 # Kmeans implementation
@@ -30,7 +44,8 @@ def k_means(X=None, init_c=None, n_iters=50):
     r = torch.zeros([K, T]) # keeps track of assignments
     d = torch.zeros([K, T]) # keeps track of distances of points from centroids
 
-    bPlot = False
+    bPlot  = True
+    bPrint = True
     i = 0       
     while i < n_iters:
 
@@ -63,6 +78,14 @@ def k_means(X=None, init_c=None, n_iters=50):
             x2 = X[:,torch.argwhere(r[1,:])]
             hw1_utils.vis_cluster(c1, x1, c2, x2)
 
+        # print final cost & centroids
+        if bPrint:
+            cost = final_cost(X, c, r )
+            print('----  Step: ', i, '----')
+            print('Cost      = ', cost)
+            print('Centroids = ', c)
+            print('\n')
+
         # Update loop index
         i += 1
 
@@ -70,6 +93,5 @@ def k_means(X=None, init_c=None, n_iters=50):
 
 # main entrypoint
 centroids = k_means()
-print('--- Final Centroids = ')
-print(centroids)
+print('--- Final Centroids = ', centroids)
 print('Done!')
