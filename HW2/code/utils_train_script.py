@@ -22,7 +22,7 @@ test_set = dset.MNIST(root=root, train=False, transform=normalization, download=
 trainLoader = DataLoader(train_set, batch_size=128, shuffle=True, num_workers=0)
 testLoader = DataLoader(test_set, batch_size=128, shuffle=False, num_workers=0)
 
-net = ResNet(3)
+net = ResNet(1)
 
 numparams = 0
 for f in net.parameters():
@@ -47,7 +47,7 @@ def test(net, testLoader):
 
 test(net, testLoader)
 
-for epoch in range(10): #4000
+for epoch in range(400): #400
     net.train()
     for batch_idx, (data, target) in enumerate(trainLoader):
         pred = net(data)

@@ -39,7 +39,7 @@ class Block(nn.Module):
         """
         out  = self.conv1(x)
         out  = self.conv2(out)
-        out += x
+        out += x # skip connection
         out  = self.relu(out)
 
         return out
@@ -63,10 +63,10 @@ class ResNet(nn.Module):
                         nn.BatchNorm2d(num_channels),
                         nn.ReLU()
                         )
-        self.maxpool  = nn.MaxPool2d(kernel_size = 2) #, stride = 1, padding = 1)
+        self.maxpool  = nn.MaxPool2d(kernel_size = 2)
         self.resblock = Block(num_channels)
-        self.avgpool  = nn.AdaptiveAvgPool2d(1) # ToDo
-        self.fullconn = nn.Linear(num_channels, num_classes) # ToDo
+        self.avgpool  = nn.AdaptiveAvgPool2d(1)
+        self.fullconn = nn.Linear(num_channels, num_classes)
 
 
     def forward(self, x):
@@ -77,17 +77,12 @@ class ResNet(nn.Module):
         The output should have shape (N, 10).
         """
         x = self.conv1(x)
-        #print('Size after Conv1', x.size())
         x = self.maxpool(x)
-        #print('Size after maxpool', x.size())
         x = self.resblock(x)
-        #print('Size after block', x.size())
         x = self.avgpool(x)
-        #print('Size after avgpool', x.size())
         x = x.view(x.size(0), -1)
-        #print('Size after something', x.size())
         x = self.fullconn(x)
-
+        
         return x
 
 
