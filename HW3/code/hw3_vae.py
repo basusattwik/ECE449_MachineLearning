@@ -53,8 +53,8 @@ class Decoder(nn.Module):
 
         self.fc1 = nn.Linear(in_features=latent_dimension, out_features=hidden_units)
         self.fc2 = nn.Linear(in_features=hidden_units, out_features=data_dimension)
-        #self.nl1 = nn.Tanh()
-        #self.nl2 = nn.Sigmoid()
+        self.nl1 = nn.Tanh()
+        self.nl2 = nn.Sigmoid()
 
     def forward(self, z):
         # input
@@ -65,10 +65,10 @@ class Decoder(nn.Module):
         # TODO: implement the decoder here. The decoder is a multi-layer perceptron with two hidden layers. 
         # The first layer is followed by a tanh non-linearity and the second layer by a sigmoid.
         
-        x1 = self.fc1(z)
-        x2 = torch.tanh(x1)
-        x3 = self.fc2(x2)
-        p  = torch.sigmoid(x3)
+        x = self.fc1(z)
+        x = self.nl1(x)
+        x = self.fc2(x)
+        p = self.nl2(x)
 
         return p
 
@@ -108,10 +108,6 @@ class VAE(nn.Module):
         #   sample: from a diagonal gaussian with mean mu and variance sigma_square [batch_size x latent_dimension]
 
         # TODO: Implement the reparameterization trick and return the sample z [batch_size x latent_dimension]
-
-        #stdnormal = torch.distributions.Normal(loc=0, scale=1)
-        #epsilon   = stdnormal.sample()
-
         epsilon = torch.randn(1)
         sample = mu + sigma_square * epsilon # reparameterized z
 
@@ -126,7 +122,6 @@ class VAE(nn.Module):
         #   x: pixels'labels [batch_size x data_dimension], type should be torch.float32
 
         # TODO: Implement a sampler from a Bernoulli distribution
-    
         x = torch.Bernoulli(p)
 
         return x
@@ -143,13 +138,8 @@ class VAE(nn.Module):
         #    logprob: log-probability of a diagonal gaussian [batch_size]
         
         # TODO: implement the logpdf of a gaussian with mean mu and variance sigma_square*I
-        #print("Cov", sigma_square)
-        #print("Cov size:", sigma_square.size())
-
-        logprob = torch.zeros(100,1) # remove hardcoded number
-        for i in range(100): # remove hardcoded number
-            normal  = torch.distributions.MultivariateNormal(loc=mu[i,:], covariance_matrix=torch.diag(sigma_square[i,:]))
-            logprob[i] = normal.log_prob(z[i,:])
+        normal  = torch.distributions.MultivariateNormal(loc=mu, covariance_matrix=torch.diag_embed(sigma_square))
+        logprob = normal.log_prob(z) 
 
         return logprob
 
@@ -163,13 +153,8 @@ class VAE(nn.Module):
         #   logprob: log-probability of a bernoulli distribution [batch_size]
 
         # TODO: implement the log likelihood of a bernoulli distribution p(x)
-        logprob = torch.ones(100,1)
-        for i in range(100):
-             for j in range(784):
-                ber = torch.distributions.Bernoulli(probs=p[i,j])
-                logprob[i] = logprob[i] *  ber.log_prob(x[i,j])
+        logprob = torch.prod(p**x * (1-p)**(1-x), dim=1)    
 
-        #print("ber logprob:", logprob)
         return logprob
     
     # Sample z ~ q(z|x)
@@ -180,6 +165,7 @@ class VAE(nn.Module):
         # Output:
         #   zs: samples from q(z|x) [batch_size x latent_dimension] 
         zs = self.sample_diagonal_gaussian(mu, sigma_square)
+
         return zs 
 
 
@@ -206,15 +192,11 @@ class VAE(nn.Module):
         log_p = self.logpdf_bernoulli(x, p)
         
         # TODO: implement the ELBO loss using log_q, log_p_z and log_p
-        q = torch.exp(log_q)
-        q = torch.transpose(q, 0, 1)
-        #print("size q:", q.size())
-        #print("size lop_p:", log_p.size())
-        #print("size log_p_z:", log_p_z.size())
+        #q = torch.exp(log_q)
+        #q = torch.transpose(q, 0, 1)
         #elbo = torch.matmul(q, log_p) + torch.matmul(q, log_p_z) - torch.matmul(q, log_q)
-  
         elbo = torch.mean(log_p + log_p_z - log_q)
-        #print("elbo", elbo)
+
         return elbo
 
 
