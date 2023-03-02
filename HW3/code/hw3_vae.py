@@ -53,8 +53,6 @@ class Decoder(nn.Module):
 
         self.fc1 = nn.Linear(in_features=latent_dimension, out_features=hidden_units)
         self.fc2 = nn.Linear(in_features=hidden_units, out_features=data_dimension)
-        self.nl1 = nn.Tanh()
-        self.nl2 = nn.Sigmoid()
 
     def forward(self, z):
         # input
@@ -65,10 +63,10 @@ class Decoder(nn.Module):
         # TODO: implement the decoder here. The decoder is a multi-layer perceptron with two hidden layers. 
         # The first layer is followed by a tanh non-linearity and the second layer by a sigmoid.
         
-        x = self.fc1(z)
-        x = self.nl1(x)
-        x = self.fc2(x)
-        p = self.nl2(x)
+        x1 = self.fc1(z)
+        x2 = torch.tanh(x1)
+        x3 = self.fc2(x2)
+        p  = torch.sigmoid(x3)
 
         return p
 
@@ -108,8 +106,8 @@ class VAE(nn.Module):
         #   sample: from a diagonal gaussian with mean mu and variance sigma_square [batch_size x latent_dimension]
 
         # TODO: Implement the reparameterization trick and return the sample z [batch_size x latent_dimension]
-        epsilon = torch.randn(1)
-        sample = mu + sigma_square * epsilon # reparameterized z
+        epsilon = torch.randn(mu.size(dim=0), mu.size(dim=1))
+        sample  = mu + torch.sqrt(sigma_square) * epsilon # reparameterized z
 
         return sample
 
@@ -122,7 +120,7 @@ class VAE(nn.Module):
         #   x: pixels'labels [batch_size x data_dimension], type should be torch.float32
 
         # TODO: Implement a sampler from a Bernoulli distribution
-        x = torch.Bernoulli(p)
+        x = torch.bernoulli(p)
 
         return x
 
@@ -152,8 +150,8 @@ class VAE(nn.Module):
         # Output:
         #   logprob: log-probability of a bernoulli distribution [batch_size]
 
-        # TODO: implement the log likelihood of a bernoulli distribution p(x)
-        logprob = torch.prod(p**x * (1-p)**(1-x), dim=1)    
+        # TODO: implement the log likelihood of a bernoulli distribution p(x)  
+        logprob = torch.sum((x*torch.log(p) + (1-x)*torch.log(1-p)), dim=1)   
 
         return logprob
     
@@ -184,7 +182,7 @@ class VAE(nn.Module):
         log_q = self.logpdf_diagonal_gaussian(sampled_z, mu, sigma_square)
         
         # log_p_z(z) log probability of z under prior
-        z_mu = torch.FloatTensor([0]*self.latent_dimension).repeat(sampled_z.shape[0], 1)
+        z_mu    = torch.FloatTensor([0]*self.latent_dimension).repeat(sampled_z.shape[0], 1)
         z_sigma = torch.FloatTensor([1]*self.latent_dimension).repeat(sampled_z.shape[0], 1)
         log_p_z = self.logpdf_diagonal_gaussian(sampled_z, z_mu, z_sigma)
 
@@ -192,9 +190,6 @@ class VAE(nn.Module):
         log_p = self.logpdf_bernoulli(x, p)
         
         # TODO: implement the ELBO loss using log_q, log_p_z and log_p
-        #q = torch.exp(log_q)
-        #q = torch.transpose(q, 0, 1)
-        #elbo = torch.matmul(q, log_p) + torch.matmul(q, log_p_z) - torch.matmul(q, log_q)
         elbo = torch.mean(log_p + log_p_z - log_q)
 
         return elbo
@@ -232,21 +227,26 @@ class VAE(nn.Module):
 
     # Generate digits using the VAE
     def visualize_data_space(self):
-        # TODO: Sample 10 z from prior 
-        
+        """
+        with torch.no_grad():
+            # TODO: Sample 10 z from prior 
+            z = self.sample_diagonal_gaussian(torch.zeros([10,self.latent_dimension]), torch.ones([10,self.latent_dimension]))
 
-        # TODO: For each z, plot p(x|z)
-        
+            # TODO: For each z, plot p(x|z) 
+            p_x_z = array_to_image(self.decoder(z))
+            plt.imshow(p_x_z)
 
-        # TODO: Sample x from p(x|z) 
-        
+            # TODO: Sample x from p(x|z) 
+            x = self.sample_Bernoulli(p_x_z)
 
-        # TODO: Concatenate plots into a figure (use the function concat_images)
-        
+            # TODO: Concatenate plots into a figure (use the function concat_images)
+            x_cat = concat_images(x, 10, 2, padding = 3)
 
-        # TODO: Save the generated figure and include it in your report
+            # TODO: Save the generated figure and include it in your report
+            plt.imshow(x_cat)
+            plt.savefig('ECE449_HW3_Q2e_Fig1.png')
+        """
         pass
-        
         
     # Produce a scatter plot in the latent space, where each point in the plot will be the mean vector 
     # for the distribution $q(z|x)$ given by the encoder. Further, we will colour each point in the plot 
@@ -257,7 +257,7 @@ class VAE(nn.Module):
     def visualize_latent_space(self):
         
         # TODO: Encode the training data self.train_images
-        
+    
 
         # TODO: Take the mean vector of each encoding
         

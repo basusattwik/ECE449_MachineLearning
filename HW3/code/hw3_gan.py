@@ -22,8 +22,22 @@ class DNet(nn.Module):
         super(DNet, self).__init__()
         
         # TODO: implement layers here
-        pass
-
+        self.conv1 = nn.Sequential(
+                nn.Conv2d(1, 2, kernel_size=3, stride=1, padding=1, bias=True),
+                nn.ReLU(),
+                nn.MaxPool2d(kernel_size=2, stride=2, padding=0)
+                )
+        self.conv2 = nn.Sequential(
+                nn.Conv2d(2, 4, kernel_size=3, stride=1, padding=1, bias=True),
+                nn.ReLU(),
+                nn.MaxPool2d(kernel_size=2, stride=2, padding=0)
+                )
+        self.conv3 = nn.Sequential(
+                nn.Conv2d(4, 8, kernel_size=3, stride=1, padding=0, bias=True),
+                nn.ReLU(),
+                )
+        self.linear = nn.Linear(in_features=150, out_features=1)
+        
         self._weight_init()
 
     def _weight_init(self):
@@ -32,7 +46,14 @@ class DNet(nn.Module):
 
     def forward(self, x):
         # TODO: complete forward function
-        pass
+        y = self.conv1(x)
+        y = self.conv2(y)
+        y = self.conv3(y)
+        y = y.view(y.size(0), -1)
+        y = self.linear(y)
+
+        return y
+
 
 
 class GNet(nn.Module):
@@ -47,7 +68,25 @@ class GNet(nn.Module):
         super(GNet, self).__init__()
 
         # TODO: implement layers here
-
+        self.linear = nn.Sequential(
+                nn.Linear(in_features=28*28, out_features=1568, bias=True),
+                nn.LeakyReLU(0.2),
+                )
+        self.ups1 = nn.Upsample(2)
+        self.conv1 = nn.Sequential(
+                nn.Conv2d(32, 16, kernel_size=3, stride=1, padding=1, bias=True),
+                nn.LeakyReLU(0.2)
+                ) 
+        self.ups2 = nn.Upsample(2)
+        self.conv2 = nn.Sequential(
+                nn.Conv2d(16, 8, kernel_size=3, stride=1, padding=1, bias=True),
+                nn.LeakyReLU(0.2)
+                ) 
+        self.conv3 = nn.Sequential(
+                nn.Conv2d(8, 1, kernel_size=3, stride=1, padding=1, bias=True),
+                nn.Sigmoid()
+                ) 
+        
         self._weight_init()
 
     def _weight_init(self):
@@ -61,7 +100,15 @@ class GNet(nn.Module):
             z: latent variables used to generate images.
         """
         # TODO: complete forward function
-        pass
+        x = self.linear(z)
+        x = torch.reshape(x, (32, 7, 7))
+        x = self.ups1(x)
+        x = self.conv1(x)
+        x = self.ups2(x)
+        x = self.conv2(x)
+        x = self.conv3(x)
+
+        return x
 
 
 class GAN:
