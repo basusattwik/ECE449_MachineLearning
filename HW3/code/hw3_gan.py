@@ -36,13 +36,21 @@ class DNet(nn.Module):
                 nn.Conv2d(4, 8, kernel_size=3, stride=1, padding=0, bias=True),
                 nn.ReLU(),
                 )
-        self.linear = nn.Linear(in_features=150, out_features=1)
+        self.linear = nn.Linear(in_features=200, out_features=1, bias=True)
         
         self._weight_init()
 
     def _weight_init(self):
         # TODO: implement weight initialization here
-        pass
+
+        for module in self.modules():
+            if isinstance(module, nn.Conv2d):
+                nn.init.kaiming_uniform_(module.weight.data)
+                nn.init.constant_(module.bias, 0)
+            elif isinstance(module, nn.Linear):
+                nn.init.kaiming_uniform_(module.weight.data)
+                nn.init.constant_(module.bias, 0)
+
 
     def forward(self, x):
         # TODO: complete forward function
@@ -53,7 +61,6 @@ class DNet(nn.Module):
         y = self.linear(y)
 
         return y
-
 
 
 class GNet(nn.Module):
@@ -69,15 +76,15 @@ class GNet(nn.Module):
 
         # TODO: implement layers here
         self.linear = nn.Sequential(
-                nn.Linear(in_features=28*28, out_features=1568, bias=True),
+                nn.Linear(in_features=zdim, out_features=1568, bias=True),
                 nn.LeakyReLU(0.2),
                 )
-        self.ups1 = nn.Upsample(2)
+        self.ups1 = nn.Upsample(scale_factor=2)
         self.conv1 = nn.Sequential(
                 nn.Conv2d(32, 16, kernel_size=3, stride=1, padding=1, bias=True),
                 nn.LeakyReLU(0.2)
                 ) 
-        self.ups2 = nn.Upsample(2)
+        self.ups2 = nn.Upsample(scale_factor=2)
         self.conv2 = nn.Sequential(
                 nn.Conv2d(16, 8, kernel_size=3, stride=1, padding=1, bias=True),
                 nn.LeakyReLU(0.2)
@@ -91,7 +98,13 @@ class GNet(nn.Module):
 
     def _weight_init(self):
         # TODO: implement weight initialization here
-        pass
+        for module in self.modules():
+            if isinstance(module, nn.Conv2d):
+                nn.init.kaiming_uniform_(module.weight.data)
+                nn.init.constant_(module.bias, 0)
+            elif isinstance(module, nn.Linear):
+                nn.init.kaiming_uniform_(module.weight.data)
+                nn.init.constant_(module.bias, 0)
 
     def forward(self, z):
         """
@@ -101,7 +114,7 @@ class GNet(nn.Module):
         """
         # TODO: complete forward function
         x = self.linear(z)
-        x = torch.reshape(x, (32, 7, 7))
+        x = torch.reshape(x, (z.size(dim=0), 32, 7, 7))
         x = self.ups1(x)
         x = self.conv1(x)
         x = self.ups2(x)
@@ -123,7 +136,7 @@ class GAN:
 
         self._zdim = zdim
         self.disc = DNet().to(self._dev)
-        self.gen = GNet(self._zdim).to(self._dev)
+        self.gen  = GNet(self._zdim).to(self._dev)
 
     def _get_loss_d(self, batch_size, batch_data, z):
         """This function computes loss for discriminator.
@@ -135,8 +148,15 @@ class GAN:
             z: random latent variable.
         """
         # TODO: implement discriminator's loss function
-        pass
+        y_real = self.disc(batch_data)
+        x_fake = self.gen(z)
+        y_fake = self.disc(x_fake)  
 
+        loss_d = -torch.sum(torch.log(y_real) + torch.log(1 - y_fake))
+
+        return loss_d
+
+    
     def _get_loss_g(self, batch_size, z):
         """This function computes loss for generator.
         Compute -\sum_z\log{D(G(z))} instead of \sum_z\log{1-D(G(z))}
@@ -146,8 +166,12 @@ class GAN:
             batch_size: #data per batch.
             z: random latent variable.
         """
-        # TODO: implement generator's loss function
-        pass
+        # TODO: implement generator's loss function HERE
+        
+        gen_img = self.gen(z)
+        loss_g  = -torch.sum(torch.log(self.disc(gen_img)))
+        
+        return loss_g
 
     def train(self, iter_d=1, iter_g=1, n_epochs=100, batch_size=256, lr=0.0002):
 
