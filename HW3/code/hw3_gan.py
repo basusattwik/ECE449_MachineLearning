@@ -147,12 +147,22 @@ class GAN:
             batch_data: data from dataset.
             z: random latent variable.
         """
-        # TODO: implement discriminator's loss function
-        y_real = self.disc(batch_data)
+        # TODO: implement discriminator's loss function    
+        criterion = torch.nn.BCEWithLogitsLoss()
+
+        x_real = batch_data
+        y_real = self.disc(x_real)
+
         x_fake = self.gen(z)
         y_fake = self.disc(x_fake)  
 
-        loss_d = -torch.sum(torch.log(y_real) + torch.log(1 - y_fake))
+        labels_real = torch.ones_like(y_real)
+        labels_fake = torch.zeros_like(y_fake)
+
+        loss_real = criterion(y_real, labels_real)
+        loss_fake = criterion(y_fake, labels_fake)
+
+        loss_d = 0.5 * (loss_real + loss_fake)
 
         return loss_d
 
@@ -168,8 +178,13 @@ class GAN:
         """
         # TODO: implement generator's loss function HERE
         
+        # Loss criterion
+        criterion = torch.nn.BCEWithLogitsLoss()
+
         gen_img = self.gen(z)
-        loss_g  = -torch.sum(torch.log(self.disc(gen_img)))
+        y_fake  = self.disc(gen_img)
+        label   = torch.ones_like(y_fake)
+        loss_g  = criterion(y_fake, label)
         
         return loss_g
 
