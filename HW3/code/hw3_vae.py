@@ -3,6 +3,7 @@ import argparse
 import matplotlib.pyplot as plt
 plt.rcParams["axes.grid"] = False
 import matplotlib.image
+from matplotlib.pyplot import figure
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
@@ -227,26 +228,36 @@ class VAE(nn.Module):
 
     # Generate digits using the VAE
     def visualize_data_space(self):
-        """
+
         with torch.no_grad():
-            # TODO: Sample 10 z from prior 
-            z = self.sample_diagonal_gaussian(torch.zeros([10,self.latent_dimension]), torch.ones([10,self.latent_dimension]))
 
-            # TODO: For each z, plot p(x|z) 
-            p_x_z = array_to_image(self.decoder(z))
-            plt.imshow(p_x_z)
+          self.encoder.load_state_dict(torch.load(self.e_path))
+          self.decoder.load_state_dict(torch.load(self.d_path))
 
-            # TODO: Sample x from p(x|z) 
-            x = self.sample_Bernoulli(p_x_z)
+          pxz_img = np.zeros(shape=(28, 280))
+          x_img   = np.zeros(shape=(28, 280))
 
-            # TODO: Concatenate plots into a figure (use the function concat_images)
-            x_cat = concat_images(x, 10, 2, padding = 3)
+          pos = np.arange(28)
+          for i in range(10):
 
-            # TODO: Save the generated figure and include it in your report
-            plt.imshow(x_cat)
-            plt.savefig('ECE449_HW3_Q2e_Fig1.png')
-        """
-        pass
+              # TODO: Sample 10 z from prior 
+              z = self.sample_diagonal_gaussian(torch.zeros([1, self.latent_dimension]), torch.ones([1, self.latent_dimension]))
+
+              # TODO: For each z, plot p(x|z)
+              pxz = self.decoder(z)
+              pxz_img[:,pos] = array_to_image(pxz.numpy())
+              figure(figsize=(8, 6), dpi=80)
+              plt.imshow(pxz_img)
+              plt.show()
+
+              # TODO: Sample x from p(x|z) 
+              x = self.sample_Bernoulli(pxz)
+              x_img[:,pos] = array_to_image(x.numpy())
+              figure(figsize=(8, 6), dpi=80)
+              plt.imshow(x_img)
+              plt.show()
+
+              pos += 28
         
     # Produce a scatter plot in the latent space, where each point in the plot will be the mean vector 
     # for the distribution $q(z|x)$ given by the encoder. Further, we will colour each point in the plot 
@@ -256,18 +267,38 @@ class VAE(nn.Module):
     # we never provided class labels to the model!
     def visualize_latent_space(self):
         
-        # TODO: Encode the training data self.train_images
-    
+        with torch.no_grad():
+          # TODO: Encode the training data self.train_images
+          mu, sigma_square = self.encoder(self.train_images)
 
-        # TODO: Take the mean vector of each encoding
-        
+          # TODO: Take the mean vector of each encoding
+          means = mu
 
-        # TODO: Plot these mean vectors in the latent space with a scatter
-        # Colour each point depending on the class label 
-        
-
-        # TODO: Save the generated figure and include it in your report
-        pass
+          # TODO: Plot these mean vectors in the latent space with a scatter
+          # Colour each point depending on the class label 
+          for i in range(10000):
+              ind = torch.argmax(self.train_labels[i,:])
+              if ind == 0:
+                  plt.scatter(mu[i,0], mu[i,1], color='red')
+              elif ind == 1:
+                  plt.scatter(mu[i,0], mu[i,1], color='blue')
+              elif ind == 2:
+                  plt.scatter(mu[i,0], mu[i,1], color='green')
+              elif ind == 3:
+                  plt.scatter(mu[i,0], mu[i,1], color='orange')
+              elif ind == 4:
+                  plt.scatter(mu[i,0], mu[i,1], color='purple')
+              elif ind == 5:
+                  plt.scatter(mu[i,0], mu[i,1], color='brown')
+              elif ind == 6:
+                  plt.scatter(mu[i,0], mu[i,1], color='cyan')
+              elif ind == 7:
+                  plt.scatter(mu[i,0], mu[i,1], color='grey')
+              elif ind == 8:
+                  plt.scatter(mu[i,0], mu[i,1], color='pink')
+              elif ind == 9:
+                  plt.scatter(mu[i,0], mu[i,1], color='olive')
+          plt.show()  
         
 
 
@@ -282,21 +313,45 @@ class VAE(nn.Module):
     # Then we will linearly interpolate between the mean vectors of their encodings. 
     # We will plot the generative distributions along the linear interpolation.
     def visualize_inter_class_interpolation(self):
-        
-        # TODO: Sample 3 pairs of data with different classes
-        
 
-        # TODO: Encode the data in each pair, and take the mean vectors
+        with torch.no_grad():     
+            # TODO: Sample 3 pairs of data with different classes
+            mu1, sigma_square1 = self.encoder(self.train_images[1,:])
+            mu2, sigma_square2 = self.encoder(self.train_images[40,:])
+            mu3, sigma_square3 = self.encoder(self.train_images[100,:])
 
+            # TODO: Encode the data in each pair, and take the mean vectors
+            interp_mu1_mu2 = self.interpolate_mu(torch.reshape(mu1, (1,2)), torch.reshape(mu2, (1,2)))
+            interp_mu2_mu3 = self.interpolate_mu(torch.reshape(mu2, (1,2)), torch.reshape(mu3, (1,2)))
+            interp_mu1_mu3 = self.interpolate_mu(torch.reshape(mu1, (1,2)), torch.reshape(mu3, (1,2)))
 
-        # TODO: Linearly interpolate between these mean vectors (Use the function interpolate_mu)
-        
+            interp_ss1_ss2 = self.interpolate_mu(sigma_square1, sigma_square2)
+            interp_ss2_ss3 = self.interpolate_mu(sigma_square2, sigma_square3)
+            interp_ss1_ss3 = self.interpolate_mu(sigma_square1, sigma_square3)
 
-        # TODO: Along the interpolation, plot the distributions p(x|z_α)
-        
+            # TODO: Linearly interpolate between these mean vectors (Use the function interpolate_mu)
+            
+            print(mu1.size())
+            # TODO: Along the interpolation, plot the distributions p(x|z_α)
+            z1 = self.sample_diagonal_gaussian(interp_mu1_mu2, interp_ss1_ss2)
+            z2 = self.sample_diagonal_gaussian(interp_mu2_mu3, interp_ss2_ss3)
+            z3 = self.sample_diagonal_gaussian(interp_mu1_mu3, interp_ss1_ss3)
 
-        # Concatenate these plots into one figure
-        pass
+            pxz1 = self.decoder(z1)
+            pxz2 = self.decoder(z2)
+            pxz3 = self.decoder(z3)
+            pxz1_img = array_to_image(pxz1.numpy())
+            figure(figsize=(8, 6), dpi=80)
+            plt.imshow(pxz1_img)
+            plt.show()
+            pxz2_img = array_to_image(pxz2.numpy())
+            figure(figsize=(8, 6), dpi=80)
+            plt.imshow(pxz2_img)
+            plt.show()
+            pxz3_img = array_to_image(pxz3.numpy())
+            figure(figsize=(8, 6), dpi=80)
+            plt.imshow(pxz3_img)
+            plt.show()
         
       
 
